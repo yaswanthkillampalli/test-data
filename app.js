@@ -19,7 +19,7 @@ app.get('/api/data/:id', (req, res) => {
 
     // Construct the file path to the corresponding JSON file in the 'data' directory.
     // e.g., if id is '1', the path will be './data/output1.json'
-    const filePath = path.join(__dirname, 'data', `output${id}.json`);
+    const filePath = path.join(__dirname, 'data', `testjson${id}.json`);
 
     // Read the file from the filesystem.
     fs.readFile(filePath, 'utf8', (err, data) => {
