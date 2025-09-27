@@ -24,9 +24,11 @@ const getRandomIp = () => {
 
 /**
  * Creates a single, complete network flow object with randomized data.
+ * @param {number} timestamp - The timestamp to use for the 'created_at' field.
  * @returns {object} A network flow data object.
  */
-const createRandomFlow = () => {
+// MODIFICATION: Added 'timestamp' parameter to control creation time
+const createRandomFlow = (timestamp) => {
   const tot_fwd_pkts = getRandom(1, 80);
   const tot_bwd_pkts = getRandom(1, 80);
 
@@ -73,14 +75,14 @@ const createRandomFlow = () => {
     "fwd_iat_std": getRandom(100, 10000, 6),
     "fwd_iat_max": getRandom(5000, 60000000),
     "fwd_iat_min": getRandom(1, 50),
-    
+
     // Backward IAT Stats
     "bwd_iat_tot": getRandom(100, 60000000),
     "bwd_iat_mean": getRandom(100, 5000, 6),
     "bwd_iat_std": getRandom(100, 10000, 6),
     "bwd_iat_max": getRandom(5000, 60000000),
     "bwd_iat_min": getRandom(1, 50),
-    
+
     // Header and Flag Info
     "fwd_psh_flags": getRandom(0, 1),
     "bwd_psh_flags": getRandom(0, 1),
@@ -97,7 +99,7 @@ const createRandomFlow = () => {
     "pkt_len_mean": getRandom(50, 800, 6),
     "pkt_len_std": getRandom(10, 500, 6),
     "pkt_len_var": getRandom(100, 250000, 6),
-    
+
     // TCP Flag Counts
     "fin_flag_cnt": getRandom(0, 1),
     "syn_flag_cnt": getRandom(0, 1),
@@ -107,13 +109,13 @@ const createRandomFlow = () => {
     "urg_flag_cnt": getRandom(0, 1),
     "cwe_flag_count": getRandom(0, 1),
     "ece_flag_cnt": getRandom(0, 1),
-    
+
     // Sizing and Ratio Info
     "down_up_ratio": getRandom(0, 5),
     "pkt_size_avg": getRandom(50, 150, 6),
     "fwd_seg_size_avg": getRandom(50, 800, 6),
     "bwd_seg_size_avg": getRandom(50, 800, 6),
-    
+
     // Bulk Rate Averages (often zero in non-bulk transfers)
     "fwd_byts_b_avg": 0,
     "fwd_pkts_b_avg": 0,
@@ -127,7 +129,7 @@ const createRandomFlow = () => {
     "subflow_fwd_byts": getRandom(100, 65535 * 2),
     "subflow_bwd_pkts": tot_bwd_pkts,
     "subflow_bwd_byts": getRandom(100, 65535 * 2),
-    
+
     // Window and Segment Size
     "init_fwd_win_byts": getRandom(1, 65535),
     "init_bwd_win_byts": getRandom(1, 65535),
@@ -143,10 +145,11 @@ const createRandomFlow = () => {
     "idle_std": 0,
     "idle_max": 0,
     "idle_min": 0,
-    
+
     // Metadata
     "flow_id": `flow-${getRandom(100000, 999999)}`,
-    "created_at": new Date().toISOString()
+    // MODIFICATION: Use the provided timestamp
+    "created_at": new Date(timestamp).toISOString()
   };
 };
 
@@ -154,10 +157,26 @@ const createRandomFlow = () => {
 // Use ?count=N to specify the number of records, e.g., /traffic?count=50
 app.get('/traffic', (req, res) => {
   // Get the 'count' from query parameters, default to 10 if not provided or invalid.
-  const count = parseInt(req.query.count, 10) || 10;
+  const requestedCount = parseInt(req.query.count, 10) || 10;
+  
+  // MODIFICATION: Set a max count and use the smaller of the two values
+  const maxCount = 10000;
+  const count = Math.min(requestedCount, maxCount);
+
   const data = [];
+  
+  // MODIFICATION: Calculate time distribution logic
+  const now = Date.now();
+  const sixHoursInMillis = 6 * 60 * 60 * 1000;
+  const startTime = now - sixHoursInMillis; // Start time is 6 hours ago
+  
+  // Calculate the time interval between each record to spread them out evenly
+  const interval = sixHoursInMillis / count;
+
   for (let i = 0; i < count; i++) {
-    data.push(createRandomFlow());
+    // MODIFICATION: Calculate the specific timestamp for this record
+    const recordTimestamp = startTime + (i * interval);
+    data.push(createRandomFlow(recordTimestamp));
   }
   res.json(data);
 });
